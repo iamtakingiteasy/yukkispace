@@ -34,17 +34,33 @@ public class VoidWorld implements World {
 
     public void addClient(Client client) {
         Camera camera = new Camera("camera");
-        camera.setPosition(new Vector3D(0, 0, 0));
+        camera.setPosition(new Vector3D(0, 0, 0.15));
         client.setActiveCamera(camera);
         camera.setActiveClient(client);
         WorldTree.Node node = new WorldTree.Node(client.getName(), this);
-        Light light = new Light("light");
-        light.setSpotCut(30);
-        light.setPosition(new Vector3D(0, 0, 0));
-        light.setDirection(new Vector3D(0, 1, 0));
-        light.setSpecular(new Vector3D(0.5, 0.5, 0.5));
-        light.setIntensity(3.0f);
-        node.addLight(light);
+
+
+        Rotation rot = new Rotation(new Vector3D(0, 0, 1), Math.toRadians(5));
+
+        Light right_eye = new Light("right_eye");
+        right_eye.setSpotCut(30);
+        right_eye.setPosition(new Vector3D(0.10, 0, 0.1));
+        right_eye.setDirection(rot.applyTo(new Vector3D(0, 1, 0)));
+        right_eye.setSpecular(new Vector3D(0.1, 0.1, 0.1));
+        right_eye.setIntensity(3.0f);
+        node.addLight(right_eye);
+
+        /*
+        Light left_eye = new Light("left_eye");
+        left_eye.setSpotCut(15);
+        left_eye.setPosition(new Vector3D(0.0, 0, 0.1));
+        left_eye.setDirection(rot.applyInverseTo(new Vector3D(0, 1, 0)));
+        left_eye.setSpecular(new Vector3D(0.1, 0.1, 0.1));
+        left_eye.setIntensity(3.0f);
+        node.addLight(left_eye);
+        */
+
+
         node.addClient(client);
         node.addEntity(new Entity("monkey"));
         node.addCamera(camera);
@@ -198,11 +214,11 @@ public class VoidWorld implements World {
             lightDirectionFour.setEntry(1, l.getDirection().getY());
             lightDirectionFour.setEntry(2, l.getDirection().getZ());
             lightDirectionFour.setEntry(3, 0);
+           //RealVector resultPosition = l.getPosition();//lightView.multiply(lightModelTrans).operate(l.getPosition());
 
-            RealVector resultPosition = lightView.multiply(lightModelTrans).operate(l.getPosition());
+
             RealVector resultDirectionFour = lightView.multiply(lightModelRot).operate(lightDirectionFour);
             RealVector resultDirection = new ArrayRealVector(3);
-
             resultDirection.setEntry(0, resultDirectionFour.getEntry(0));
             resultDirection.setEntry(1, resultDirectionFour.getEntry(1));
             resultDirection.setEntry(2, resultDirectionFour.getEntry(2));
@@ -211,7 +227,7 @@ public class VoidWorld implements World {
             ls.ambient = doubleArrToFloatArr(l.getAmbient().toArray());
             ls.diffuse = doubleArrToFloatArr(l.getDiffuse().toArray());
             ls.direction = doubleArrToFloatArr(resultDirection.toArray());
-            ls.position = doubleArrToFloatArr(resultPosition.toArray());
+            ls.position = doubleArrToFloatArr(l.getPosition().toArray());
             ls.intensity = doubleArrToFloatArr(l.getIntensity().toArray());
             ls.fadeconstant = l.getFadeConstant();
             ls.fadelinear = l.getFadeLinear();

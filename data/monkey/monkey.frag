@@ -2,10 +2,7 @@
 
 struct light_t {
   bool enabled; // if light is enabled
-  mat4 MT;      // Model translation component
-  mat4 MR;      // Model rotation component
-  mat4 V;       // View
-  mat4 P;       // Projection (unused currently)
+  mat4 MVP;
 
   // attenuation
   vec3 intensity;
@@ -32,8 +29,7 @@ const int maximum_lights = 8;
 // geometry
 varying vec3  trans_normal;
 varying vec3  trans_position;
-//varying vec3  trans_s[maximum_lights];
-//varying float trans_spot[maximum_lights];
+varying vec4  trans_shadowuv[maximum_lights];
 
 // material colors
 varying vec3  trans_ambient;
@@ -44,6 +40,15 @@ varying float trans_shininess;
 uniform mat4 M;
 uniform mat4 V;
 
+uniform sampler2D tex_depthmap1;
+uniform sampler2D tex_depthmap2;
+uniform sampler2D tex_depthmap3;
+uniform sampler2D tex_depthmap4;
+uniform sampler2D tex_depthmap5;
+uniform sampler2D tex_depthmap6;
+uniform sampler2D tex_depthmap7;
+uniform sampler2D tex_depthmap8;
+
 uniform light_t lights[maximum_lights];
 
 float radians(float degrees) {
@@ -51,6 +56,8 @@ float radians(float degrees) {
 }
 
 vec3 ads_model(vec3 tnorm, int i) {
+  vec2 coords;
+
   // direction from vertex to light position
   vec3 s = normalize(vec3(lights[i].position) - trans_position);
 
@@ -86,12 +93,46 @@ void main(void) {
 
   for (int i = 0; i < maximum_lights; i++) {
     if (lights[i].enabled) {
-      color += ads_model(tnorm, i);
+      float factor = 1.0;
+      vec4 shadow = texture2DProj(tex_depthmap1, trans_shadowuv[i].xyw);
+      if (shadow.z < (trans_shadowuv[i].z-0.05)/trans_shadowuv[i].w) factor = 0.2;
+      color += factor * ads_model(tnorm, i);
     }
   }
 
-  //color += ads_model(tnorm, lights[0]);
-  // ... and so on, very slow on number of lights > 1
+
+
+  /*
+  if (i < 4) {
+    if (i < 2) {
+      if (i == 0) {
+        depthmap = tex_depthmap1;
+      } else {
+        depthmap = tex_depthmap2;
+      }
+    } else {
+      if (i == 2) {
+        depthmap = tex_depthmap3;
+      } else {
+        depthmap = tex_depthmap4;
+      }
+    }
+  } else {
+    if (i < 6) {
+      if (i == 4) {
+        depthmap = tex_depthmap5;
+      } else {
+        depthmap = tex_depthmap6;
+      }
+    } else {
+      if (i == 6) {
+        depthmap = tex_depthmap7;
+      } else {
+        depthmap = tex_depthmap8;
+      }
+    }
+  }
+  */
 
   gl_FragColor = vec4(color, 1.0);
 }

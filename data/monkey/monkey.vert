@@ -2,10 +2,7 @@
 
 struct light_t {
   bool enabled; // if light is enabled
-  mat4 MT;      // Model translation component
-  mat4 MR;      // Model rotation component
-  mat4 V;       // View
-  mat4 P;       // Projection (unused currently)
+  mat4 MVP;
 
   // attenuation
   vec3 intensity;
@@ -36,8 +33,7 @@ attribute float in_material;
 
 varying vec3  trans_normal;
 varying vec3  trans_position;
-varying vec3  trans_s[maximum_lights];
-varying float trans_spot[maximum_lights];
+varying vec4  trans_shadowuv[maximum_lights];
 
 varying vec3  trans_ambient;
 varying vec3  trans_diffuse;
@@ -67,4 +63,10 @@ void main(void) {
   trans_diffuse   = texture1D(tex_materials, texoff * in_material + texstep * 1).rgb;
   trans_specular  = texture1D(tex_materials, texoff * in_material + texstep * 2).rgb;
   trans_shininess = texture1D(tex_materials, texoff * in_material + texstep * 3).x;
+
+  for (int i = 0; i < maximum_lights; i++) {
+    if (lights[i].enabled) {
+      trans_shadowuv[i] = lights[i].MVP * in_position;
+    }
+  }
 }

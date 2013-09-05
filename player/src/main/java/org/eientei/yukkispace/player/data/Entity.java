@@ -9,11 +9,10 @@ import org.lwjgl.opengl.GL15;
 import org.lwjgl.opengl.GL20;
 import org.lwjgl.util.vector.Matrix3f;
 import org.lwjgl.util.vector.Matrix4f;
-import org.lwjgl.util.vector.Vector3f;
-import org.lwjgl.util.vector.Vector4f;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.FloatBuffer;
 import java.util.Map;
 
 /**
@@ -32,6 +31,18 @@ public class Entity {
     private float materialTextureSize;
     private int diffuseTexture;
     private boolean loaded;
+    private static Matrix4f biasMatrix = new Matrix4f();
+
+    static {
+        float[] bias = new float[] {
+                0.5f, 0.0f, 0.0f, 0.0f,
+                0.0f, 0.5f, 0.0f, 0.0f,
+                0.0f, 0.0f, 0.5f, 0.0f,
+                0.5f, 0.5f, 0.5f, 1.0f
+        };
+
+        biasMatrix.load(FloatBuffer.wrap(bias));
+    }
 
     public Entity(String name, File assetsDir) throws IOException, LWJGLException {
         this.name = name;
@@ -120,15 +131,23 @@ public class Entity {
         shaderProgram.setUniform("texels", materialTextureSize);
 
         GL13.glActiveTexture(GL13.GL_TEXTURE0);
+        GL11.glEnable(GL11.GL_TEXTURE_1D);
         GL11.glBindTexture(GL11.GL_TEXTURE_1D, materialTexture);
         shaderProgram.setUniform("tex_materials", 0);
+
         for (int i = 0; i < lights.length; i++) {
             if (!lights[i].isActive()) {
                  break;
             }
+            Matrix4f lightModelView = Matrix4f.mul(Player.mat4FromArr(lights[i].getData().view), model, new Matrix4f());
+            Matrix4f lightMVP = Matrix4f.mul(Player.mat4FromArr(lights[i].getData().projection), lightModelView, new Matrix4f());
+            Matrix4f biasedMVP = Matrix4f.mul(biasMatrix, lightMVP, new Matrix4f());
+
+            GL13.glActiveTexture(GL13.GL_TEXTURE1 + i);
+            GL11.glEnable(GL11.GL_TEXTURE_2D);
             GL11.glBindTexture(GL11.GL_TEXTURE_2D, lights[i].getDepthmapTextureId());
-            shaderProgram.setUniform("tex_depthmap" + i, i+1);
-            shaderProgram.setUniform("lights[" + i + "]", lights[i]);
+            shaderProgram.setUniform("tex_depthmap" + (i+1), i+1);
+            shaderProgram.setUniform("lights[" + i + "]", lights[i], biasedMVP);
         }
 
         for (Map.Entry<String, Float> en : uniforms.entrySet()) {

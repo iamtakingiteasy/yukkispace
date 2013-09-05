@@ -259,12 +259,9 @@ public class ShaderProgram {
     }
 
 
-    public void setUniform(String base, Light light) {
+    public void setUniform(String base, Light light, Matrix4f lightMVP) {
         setUniform(base + ".enabled", light.isActive());
-        setUniform(base + ".MT", light.getData().modelTrans);
-        setUniform(base + ".MR", light.getData().modelRot);
-        setUniform(base + ".V", light.getData().view);
-        setUniform(base + ".P", light.getData().projection);
+        setUniform(base + ".MVP", lightMVP);
         setUniform(base + ".intensity", light.getData().intensity);
         setUniform(base + ".fade_const", light.getData().fadeconstant);
         setUniform(base + ".fade_linear", light.getData().fadelinear);
